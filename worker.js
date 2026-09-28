@@ -22,15 +22,9 @@ export default {
 
         const response = await fetch(API, {
 
-          signal: controller.signal,
+          signal: controller.signal
 
-          headers: {
-
-            "Accept": "application/json,text/plain,*/*",
-
-            "User-Agent": "Mozilla/5.0 TransitNationalityCollector/1.0"
-
-          }
+        
 
         });
 
