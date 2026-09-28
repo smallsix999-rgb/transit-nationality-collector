@@ -1,0 +1,24 @@
+name: Collect transit data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 * * * *"
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch official API
+        run: |
+          curl --fail --show-error --silent \
+            --connect-timeout 30 \
+            --max-time 120 \
+            "https://opendata.immigration.gov.tw/APIS/TPE3" \
+            -o transit.json
+
+          echo "Downloaded bytes:"
+          wc -c transit.json
+
+          echo "First 300 characters:"
+          head -c 300 transit.json
