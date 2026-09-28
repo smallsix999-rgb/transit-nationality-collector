@@ -10,11 +10,15 @@ export default {
 
     if (url.pathname === "/collect") {
 
+      const controller = new AbortController();
+
+      // 8 秒內沒有回應就中止，避免一直卡住
+
+      const timer = setTimeout(() => controller.abort(), 8000);
+
       try {
 
-        const controller = new AbortController();
-
-        const timer = setTimeout(() => controller.abort(), 8000);
+        const started = Date.now();
 
         const response = await fetch(API, {
 
@@ -32,63 +36,87 @@ export default {
 
         clearTimeout(timer);
 
+        const elapsedMs = Date.now() - started;
+
         const text = await response.text();
 
         if (!response.ok) {
 
-          return Response.json({
+          return Response.json(
 
-            ok: false,
+            {
 
-            stage: "official-api",
+              ok: false,
 
-            status: response.status,
+              stage: "api",
 
-            message: text.slice(0, 300)
+              status: response.status,
 
-          }, { status: 502 });
+              elapsedMs,
+
+              message: text.slice(0, 300)
+
+            },
+
+            { status: 502 }
+
+          );
 
         }
 
-        let data;
+        let raw;
 
         try {
 
-          data = JSON.parse(text);
+          raw = JSON.parse(text);
 
         } catch (error) {
 
-          return Response.json({
+          return Response.json(
 
-            ok: false,
+            {
 
-            stage: "json",
+              ok: false,
 
-            message: "官方資料不是有效的 JSON",
+              stage: "json",
 
-            preview: text.slice(0, 300)
+              elapsedMs,
 
-          }, { status: 502 });
+              message: "官方 API 有回應，但不是有效 JSON",
+
+              preview: text.slice(0, 300)
+
+            },
+
+            { status: 502 }
+
+          );
 
         }
 
-        const rows = Array.isArray(data)
+        const rows = Array.isArray(raw)
 
-          ? data
+          ? raw
 
-          : Array.isArray(data?.data)
+          : Array.isArray(raw?.data)
 
-            ? data.data
+          ? raw.data
 
-            : [];
+          : [];
 
         return Response.json({
 
           ok: true,
 
-          capturedAt: new Date().toISOString(),
+          stage: "api-ok",
+
+          source: API,
+
+          elapsedMs,
 
           rows: rows.length,
+
+          capturedAt: new Date().toISOString(),
 
           sample: rows.slice(0, 3)
 
@@ -96,17 +124,25 @@ export default {
 
       } catch (error) {
 
-        return Response.json({
+        clearTimeout(timer);
 
-          ok: false,
+        return Response.json(
 
-          stage: "fetch",
+          {
 
-          error: error?.name || "Error",
+            ok: false,
 
-          message: error?.message || String(error)
+            stage: "fetch",
 
-        }, { status: 502 });
+            error: error?.name || "Error",
+
+            message: error?.message || String(error)
+
+          },
+
+          { status: 502 }
+
+        );
 
       }
 
@@ -114,9 +150,19 @@ export default {
 
     return new Response(
 
-      "Transit nationality collector is running.",
+      "Transit nationality collector is running. Add /collect to test the official API.",
 
-      { status: 200 }
+      {
+
+        status: 200,
+
+        headers: {
+
+          "content-type": "text/plain; charset=UTF-8"
+
+        }
+
+      }
 
     );
 
