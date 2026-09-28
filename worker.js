@@ -12,9 +12,9 @@ export default {
 
       const controller = new AbortController();
 
-      // 8 秒內沒有回應就中止，避免一直卡住
+      // 30 秒內沒有回應就中止，避免一直卡住
 
-      const timer = setTimeout(() => controller.abort(), 8000);
+      const timer = setTimeout(() => controller.abort(), 30000);
 
       try {
 
